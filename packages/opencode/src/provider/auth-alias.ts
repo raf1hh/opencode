@@ -1,6 +1,6 @@
-import type { Config } from "@/config/config"
+import type { ConfigV1 } from "@opencode-ai/core/v1/config/config"
 
-export function driver(cfg: Config.Info, id: string) {
+export function driver(cfg: ConfigV1.Info, id: string) {
   const seen = new Set<string>()
   let current = id
 
@@ -14,6 +14,6 @@ export function driver(cfg: Config.Info, id: string) {
   }
 }
 
-export function aliases(cfg: Config.Info, id: string) {
+export function aliases(cfg: ConfigV1.Info, id: string) {
   return Object.keys(cfg.provider ?? {}).filter((item) => item !== id && driver(cfg, item) === id)
 }
