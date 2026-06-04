@@ -102,6 +102,10 @@ export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
 
         return {
           apiKey: "",
+          // Surface the copilot endpoint through the loader so custom providers reusing this
+          // auth flow (config `auth_provider`) inherit a baseURL — the per-id `models` hook that
+          // normally sets `model.api.url` only runs for the literal "github-copilot" id.
+          baseURL: base(info.enterpriseUrl),
           async fetch(request: RequestInfo | URL, init?: RequestInit) {
             const info = await getAuth()
             if (info.type !== "oauth") return fetch(request, init)

@@ -306,10 +306,13 @@ it.instance(
     const providers = yield* list
     const custom = providers[ProviderV2.ID.make("custom-github-copilot")]
     // auth_provider reuses the github-copilot auth loader, so the custom provider
-    // is registered with the loader's resolved options (apiKey + fetch).
+    // is registered with the loader's resolved options (apiKey + fetch + baseURL).
     expect(custom).toBeDefined()
     expect(custom.options.apiKey).toBe("")
     expect(typeof custom.options.fetch).toBe("function")
+    // baseURL must be inherited from the loader, otherwise the SDK has no endpoint and
+    // falls back to requiring an API key instead of using the oauth fetch.
+    expect(custom.options.baseURL).toBe("https://api.githubcopilot.com")
   }),
   {
     config: {
