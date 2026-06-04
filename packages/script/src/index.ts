@@ -33,7 +33,11 @@ const IS_PREVIEW = CHANNEL !== "latest"
 
 const VERSION = await (async () => {
   if (env.OPENCODE_VERSION) return env.OPENCODE_VERSION
-  if (IS_PREVIEW) return `0.0.0-${CHANNEL}-${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "")}`
+  if (IS_PREVIEW)
+    // Branch names can contain "/" (e.g. feat/x). A slash in a package version makes npm parse
+    // `pkg@<version>` as a GitHub git spec, so the plugin dependency install would git-clone over
+    // SSH and prompt for a key passphrase. Sanitize to keep the version a plain semver prerelease.
+    return `0.0.0-${CHANNEL.replaceAll("/", "-")}-${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "")}`
   const version = await fetch("https://registry.npmjs.org/opencode-ai/latest")
     .then((res) => {
       if (!res.ok) throw new Error(res.statusText)
