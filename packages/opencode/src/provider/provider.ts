@@ -1433,19 +1433,33 @@ export const layer = Layer.effect(
           }
         }
 
+        // Providers reused only as auth_provider drivers may be disabled themselves, but their
+        // custom loaders (e.g. github-copilot's responses/chat selection) must still run so the
+        // config aliases pointing at them can inherit those loaders below.
+        const aliasDrivers = new Set<string>()
+        for (const [id] of configProviders) {
+          const d = driver(cfg, id)
+          if (d !== id) aliasDrivers.add(d)
+        }
+
         for (const [id, fn] of Object.entries(custom(dep))) {
           const providerID = ProviderV2.ID.make(id)
-          if (disabled.has(providerID)) continue
+          const isAliasDriver = aliasDrivers.has(providerID)
+          if (disabled.has(providerID) && !isAliasDriver) continue
           const data = database[providerID]
           if (!data) {
             log.error("Provider does not exist in model list " + providerID)
             continue
           }
           const result = yield* fn(data)
-          if (result && (result.autoload || providers[providerID])) {
+          if (result) {
+            // Register loaders even when the provider isn't loaded itself, so aliases reusing it
+            // via auth_provider can inherit them.
             if (result.getModel) modelLoaders[providerID] = result.getModel
             if (result.vars) varsLoaders[providerID] = result.vars
             if (result.discoverModels) discoveryLoaders[providerID] = result.discoverModels
+          }
+          if (result && !disabled.has(providerID) && (result.autoload || providers[providerID])) {
             const opts = result.options ?? {}
             const patch: Partial<Info> = providers[providerID] ? { options: opts } : { source: "custom", options: opts }
             mergeProvider(providerID, patch)

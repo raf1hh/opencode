@@ -334,6 +334,40 @@ it.instance(
   },
 )
 
+it.instance(
+  "auth_provider alias inherits driver model loader when the driver is disabled",
+  Effect.gen(function* () {
+    yield* setProcessEnv(
+      "OPENCODE_AUTH_CONTENT",
+      JSON.stringify({
+        "custom-github-copilot": { type: "oauth", refresh: "gho", access: "gho", expires: 0 },
+      }),
+    )
+    const provider = yield* Provider.Service
+    // gpt-5 models on copilot are only reachable via the responses endpoint; the alias must
+    // inherit github-copilot's model loader even though github-copilot is disabled (driver-only).
+    const model = yield* provider.getModel(
+      ProviderV2.ID.make("custom-github-copilot"),
+      ProviderV2.ModelID.make("gpt-5.5"),
+    )
+    const language = yield* provider.getLanguage(model)
+    expect(String((language as { provider?: string }).provider ?? "")).toContain("custom-github-copilot.responses")
+  }),
+  {
+    config: {
+      disabled_providers: ["github-copilot"],
+      provider: {
+        "custom-github-copilot": {
+          name: "Custom GitHub Copilot",
+          auth_provider: "github-copilot",
+          npm: "@ai-sdk/github-copilot",
+          models: { "gpt-5.5": {} },
+        },
+      },
+    },
+  },
+)
+
 it.instance("getModel returns model for valid provider/model", () =>
   Effect.gen(function* () {
     yield* setProcessEnv("ANTHROPIC_API_KEY", "test-api-key")
